@@ -31,7 +31,7 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const [aiState] = useAIState()
   const [messages, setMessages] = useUIState<typeof AI>()
-  const { submitUserMessage } = useActions()
+  const { submitMsg } = useActions()
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
 
   // const exampleMessages = [
@@ -82,7 +82,7 @@ export function ChatPanel({
                     }
                   ])
 
-                  const responseMessage = await submitUserMessage(
+                  const responseMessage = await submitMsg(
                     example.message
                   )
 

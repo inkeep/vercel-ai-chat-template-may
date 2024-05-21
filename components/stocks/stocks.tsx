@@ -12,7 +12,7 @@ interface Stock {
 
 export function Stocks({ props: stocks }: { props: Stock[] }) {
   const [, setMessages] = useUIState<typeof AI>()
-  const { submitUserMessage } = useActions()
+  const { submitMsg } = useActions()
 
   return (
     <div>
@@ -22,7 +22,7 @@ export function Stocks({ props: stocks }: { props: Stock[] }) {
             key={stock.symbol}
             className="flex cursor-pointer flex-row gap-2 rounded-lg bg-zinc-800 p-2 text-left hover:bg-zinc-700 sm:w-52"
             onClick={async () => {
-              const response = await submitUserMessage(`View ${stock.symbol}`)
+              const response = await submitMsg(`View ${stock.symbol}`)
               setMessages(currentMessages => [...currentMessages, response])
             }}
           >

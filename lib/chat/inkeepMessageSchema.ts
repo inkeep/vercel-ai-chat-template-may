@@ -9,8 +9,7 @@ const RecordTypesSchema = z.union([
     z.literal('STACKOVERFLOW_QUESTION'),
     z.literal('DISCORD_FORUM_POST'),
     z.literal('DISCORD_MESSAGE'),
-    z.literal('CUSTOM_QUESTION_ANSWER'),
-    z.string()
+    z.literal('CUSTOM_QUESTION_ANSWER')
 ]);
 
 const RecordSchema = z.object({
@@ -23,20 +22,20 @@ const RecordSchema = z.object({
 
 const CitationSchema = z.object({
     number: z.number().int(),
-    record: RecordSchema,
+    record: RecordSchema.optional(),
     hitUrl: z.string().optional(),
 }).passthrough();
 
 const RecordsCited = z.object({
     citations: z.array(CitationSchema)
-}).passthrough();
+}).passthrough().describe('List of citations from the information sources used to answer the users question. If using citations, incorporate them into the response in the format `[number](url)` where number corresponds to the order you use them.')
 
 const AssistantMessage = z.object({
-    content: z.string(),
-    role: z.literal('assistant')
+    content: z.string().describe('Answer to users question'),
+    role: z.literal('assistant').describe("Should always be 'assistant'")
 }).passthrough();
 
 export const InkeepJsonMessageSchema = z.object({
     message: AssistantMessage,
-    recordsCited: RecordsCited.optional(),
+    recordsCited: z.array(CitationSchema).optional().describe('List of citations from the information sources used to answer the users question. If using citations, incorporate them into the response in the format `[number](url)` where number corresponds to the order you use them.')
 }).passthrough();
