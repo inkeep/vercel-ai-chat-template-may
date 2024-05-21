@@ -36,7 +36,7 @@ async function submitUserMessage(content: string) {
 
   const openai = createOpenAI({
     apiKey: process.env.INKEEP_API_KEY,
-    baseURL: 'https://inkeep.ngrok.io/v1'
+    baseURL: 'https://api.inkeep.com/v1'
   })
 
   const result = await streamObject({
