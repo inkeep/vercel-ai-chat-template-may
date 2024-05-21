@@ -23,17 +23,17 @@ const RecordSchema = z.object({
 
 const CitationSchema = z.object({
     number: z.number().int(),
-    record: RecordSchema,
+    record: RecordSchema.optional(),
     hitUrl: z.string().optional(),
-}).passthrough();
+}).passthrough().describe('List of citations from the information sources used to answer the users question. If using citations, incorporate them into the response in the format `[number](url)` where number corresponds to the order you use them')
 
 const RecordsCited = z.object({
     citations: z.array(CitationSchema)
-}).passthrough();
+}).passthrough()
 
 const AssistantMessage = z.object({
-    content: z.string(),
-    role: z.literal('assistant')
+    content: z.string().describe('Answer to users question'),
+    role: z.literal('assistant').describe("Should always be 'assistant'")
 }).passthrough();
 
 export const InkeepJsonMessageSchema = z.object({
