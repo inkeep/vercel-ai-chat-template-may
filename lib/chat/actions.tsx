@@ -75,7 +75,6 @@ async function submitMsgContextualStreamText(content: string){
     const {textStream  } = result
     let ikpMsg = ''
     for await (const partialMessage of textStream) {
-      console.log(partialMessage)
       ikpMsg += partialMessage
       ui.update(ikpMsg)
     }
@@ -101,7 +100,7 @@ async function submitMsgContextualStreamText(content: string){
   }
 }
 
-// uses the `inkeep-contextual` model to generate a plain text response
+// uses the `inkeep-contextual` model to generate a tool-using response using streamUI
 async function submitMsgContextualStreamUITools(content: string) {
   'use server'
 
@@ -118,13 +117,12 @@ async function submitMsgContextualStreamUITools(content: string) {
       }
     ]
   })
-  console.log("hello!");
   const result = await streamUI({
     model: openai('inkeep-contextual-gpt-4o'),
     messages: [
       {
         role: 'system',
-        content: 'Respond to the user question using the `answerInMarkdown` tool.'
+        content: 'Respond to the user question using the available tools.'
       },
       ...aiState.get().messages.map((message: any) => ({
         role: message.role,
@@ -132,21 +130,18 @@ async function submitMsgContextualStreamUITools(content: string) {
         name: 'inkeep-contextual-user-message'
       }))
     ],
-    tools: {
+    tools: { // define your own
       answerInMarkdown: {
         description: 'An answer to the users question in markdown',
         parameters: InkeepJsonMessageSchema,
         generate: async function* (answer: z.infer<typeof InkeepJsonMessageSchema>){
-          console.log("trying!")
-          console.log(answer);
           try {
-            yield <>${JSON.stringify(answer)}</>;
+            yield <>{answer.message.content}</>;
           } catch (error) {
             console.error("Invalid message format", error);
             // No return or yield in case of error, allowing continuation
           }
 
-          console.log("should be last");
           aiState.done({
             chatId: nanoid(),
             messages: [
@@ -159,8 +154,7 @@ async function submitMsgContextualStreamUITools(content: string) {
               }
             ]
           })
-          console.log(answer.message.content)
-          return <>${JSON.stringify(answer)}</>
+          return <>{answer.message.content}</>
         }
       }
     }
@@ -173,7 +167,7 @@ async function submitMsgContextualStreamUITools(content: string) {
 }
 
 // uses the `inkeep-contextual` model to generate an object using streamObject
-async function submitMsgContextualStreamObjectAsTool(content: string) {
+async function submitMsgContextualStreamObject(content: string) {
   'use server'
 
   const aiState = getMutableAIState<typeof AI>()
@@ -196,7 +190,7 @@ async function submitMsgContextualStreamObjectAsTool(content: string) {
     model: openai('inkeep-contextual-gpt-4o'),
     schema: InkeepJsonMessageSchema,
     maxTokens: 4096,
-    mode: 'tool',
+    mode: 'json', // stream works properly if mode: 'json'
     messages: [
       ...aiState.get().messages.map((message: any) => ({
         role: message.role,
@@ -211,8 +205,6 @@ async function submitMsgContextualStreamObjectAsTool(content: string) {
   runAsyncFnWithoutBlocking(async () => {
     let ikpMessageObj
     for await (const partialObject of partialObjectStream) {
-      console.log('hello');
-      console.log(partialObject);
       chatMessage.update(partialObject.message?.content)
       ikpMessageObj = partialObject
     }
@@ -226,7 +218,7 @@ async function submitMsgContextualStreamObjectAsTool(content: string) {
           id: nanoid(),
           role: 'assistant',
           content: ikpMessageObj?.message?.content || '',
-          name: "inkeep-qa-assistant-message"
+          name: "inkeep-contextual-assistant-message"
         }
       ]
     })
@@ -238,7 +230,7 @@ async function submitMsgContextualStreamObjectAsTool(content: string) {
   }
 }
 
-// uses the `inkeep-qa` model to generate a JSON response (opinionated - always responds in same schema)
+// uses the `inkeep-qa` model to generate a JSON response (opinionated - always responds in predefined schema)
 async function submitMsgQAModelStreamObjectJSONMode(content: string) {
   'use server'
 
@@ -314,7 +306,7 @@ export type UIState = {
 const actions = {
   submitMsgContextualStreamText,
   submitMsgContextualStreamUITools,
-  submitMsgContextualStreamObjectAsTool,
+  submitMsgContextualStreamObject,
   submitMsgQAModelStreamObjectJSONMode
 }
 
