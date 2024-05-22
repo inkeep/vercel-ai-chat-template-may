@@ -24,72 +24,6 @@ const openai = createOpenAI({
   baseURL: 'https://api.inkeep.com/v1'
 })
 
-// uses the `inkeep-contextual` model to generate a tool-using response using streamUI
-async function submitMsgContextualStreamUITools(content: string) {
-  'use server'
-
-  const aiState = getMutableAIState<typeof AI>()
-
-  aiState.update({
-    ...aiState.get(),
-    messages: [
-      ...aiState.get().messages,
-      {
-        id: nanoid(),
-        role: 'user',
-        content
-      }
-    ]
-  })
-  const result = await streamUI({
-    model: openai('inkeep-contextual-gpt-4o'),
-    messages: [
-      {
-        role: 'system',
-        content: 'Respond to the user question using the available tools.'
-      },
-      ...aiState.get().messages.map((message: any) => ({
-        role: message.role,
-        content: message.content,
-        name: 'inkeep-contextual-user-message'
-      }))
-    ],
-    tools: { // define your own
-      answerInMarkdown: {
-        description: 'An answer to the users question in markdown',
-        parameters: InkeepJsonMessageSchema,
-        generate: async function* (answer: z.infer<typeof InkeepJsonMessageSchema>){
-          try {
-            yield <>{answer.message.content}</>;
-          } catch (error) {
-            console.error("Invalid message format", error);
-            // No return or yield in case of error, allowing continuation
-          }
-
-          aiState.done({
-            chatId: nanoid(),
-            messages: [
-              ...aiState.get().messages,
-              {
-                id: nanoid(),
-                role: 'assistant',
-                content: answer.message.content,
-                name: "inkeep-contextual-assistant-message"
-              }
-            ]
-          })
-          return <>{answer.message.content}</>
-        }
-      }
-    }
-  })
-
-  return {
-    id: nanoid(),
-    display: result.value
-  }
-}
-
 // uses the `inkeep-contextual` model to generate an object using streamObject
 async function submitMsgContextualStreamObject(content: string) {
   'use server'
@@ -111,7 +45,7 @@ async function submitMsgContextualStreamObject(content: string) {
   const chatMessage = createStreamableUI()
 
   const result = await streamObject({
-    model: openai('inkeep-contextual-gpt-4-turbo'),
+    model: openai('inkeep-contextual-gpt-4o'),
     schema: InkeepJsonMessageSchema,
     maxTokens: 4096,
     mode: 'tool',
@@ -227,6 +161,69 @@ async function submitMsgContextualStreamText(content: string){
   return {
     id: nanoid(),
     display: ui.value
+  }
+}
+
+// uses the `inkeep-contextual` model to generate a tool-using response using streamUI
+// NOTE: currently 'generate' is not invoked on every streamed event, only at the end.
+async function submitMsgContextualStreamUITools(content: string) {
+  'use server'
+
+  const aiState = getMutableAIState<typeof AI>()
+
+  aiState.update({
+    ...aiState.get(),
+    messages: [
+      ...aiState.get().messages,
+      {
+        id: nanoid(),
+        role: 'user',
+        content
+      }
+    ]
+  })
+  const result = await streamUI({
+    model: openai('inkeep-contextual-gpt-4o'),
+    messages: [
+      {
+        role: 'system',
+        content: 'Respond to the user question using the the answerInMarkdown tool.'
+      },
+      ...aiState.get().messages.map((message: any) => ({
+        role: message.role,
+        content: message.content,
+        name: 'inkeep-contextual-user-message'
+      }))
+    ],
+    tools: { // define your own
+      answerInMarkdown: {
+        description: 'Answer the user question in markdown',
+        parameters: InkeepJsonMessageSchema,
+        generate: async function* (answer: any){
+          yield <>${JSON.stringify(answer)}</>;
+
+          aiState.done({
+            chatId: nanoid(),
+            messages: [
+              ...aiState.get().messages,
+              {
+                id: nanoid(),
+                role: 'assistant',
+                content: answer.message.content,
+                name: "inkeep-contextual-assistant-message"
+              }
+            ]
+          })
+
+          return <>${JSON.stringify(answer)}</>
+        },
+      }
+    }
+  })
+
+  return {
+    id: nanoid(),
+    display: result.value
   }
 }
 
