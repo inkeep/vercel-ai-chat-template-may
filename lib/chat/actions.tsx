@@ -24,82 +24,6 @@ const openai = createOpenAI({
   baseURL: 'https://api.inkeep.com/v1'
 })
 
-
-// uses the `inkeep-contextual` model to generate a plain text response
-async function submitMsgContextualStreamText(content: string){
-  "use server"
-
-  const aiState = getMutableAIState<typeof AI>()
-
-  aiState.update({
-    ...aiState.get(),
-    messages: [
-      ...aiState.get().messages,
-      {
-        id: nanoid(),
-        role: 'user',
-        content
-      }
-    ]
-  })
-
-  const result = await streamText({
-    model: openai('inkeep-contextual-gpt-4o'),
-    messages: [
-      {
-        role: 'system',
-        content: 'Respond in french'
-      },
-      {
-        role: 'system',
-        content: `
-            ## Persona
-            You are a helpful assistant for Vercel. You help answer user questions about Next.js, Vercel, Turborepo and other parts of the Vercel platform based only on documentation. 
-
-            ## Rule:
-            - Include inline citations for all the information you provide in the format of: [Title](URL).
-            - Ensure that all parts of your response are based on only the knowledge found in the information sources.
-            - Respond in plaintext, no markdown
-          `
-      },
-      {
-        role: 'user',
-        content: content
-      }
-    ],
-  })
-
-  const ui = createStreamableUI();
-
-  runAsyncFnWithoutBlocking(async () => {
-    const {textStream  } = result
-    let ikpMsg = ''
-    for await (const partialMessage of textStream) {
-      ikpMsg += partialMessage
-      ui.update(ikpMsg)
-    }
-    // have this render the desired React component with the markdown parsing and citations
-    ui.done();
-    aiState.done({
-      chatId: nanoid(),
-      messages: [
-        ...aiState.get().messages,
-        {
-          id: nanoid(),
-          role: 'assistant',
-          content: ikpMsg,
-          name: "inkeep-contextual-assistant-message"
-        }
-      ]
-    })
-  })
-
-  return {
-    id: nanoid(),
-    display: ui.value
-  }
-}
-
 // uses the `inkeep-contextual` model to generate a tool-using response using streamUI
 async function submitMsgContextualStreamUITools(content: string) {
   'use server'
@@ -187,10 +111,10 @@ async function submitMsgContextualStreamObject(content: string) {
   const chatMessage = createStreamableUI()
 
   const result = await streamObject({
-    model: openai('inkeep-contextual-gpt-4o'),
+    model: openai('inkeep-contextual-gpt-4-turbo'),
     schema: InkeepJsonMessageSchema,
     maxTokens: 4096,
-    mode: 'json', // stream works properly if mode: 'json'
+    mode: 'tool',
     messages: [
       ...aiState.get().messages.map((message: any) => ({
         role: message.role,
@@ -200,14 +124,15 @@ async function submitMsgContextualStreamObject(content: string) {
     ]
   })
 
-  const { partialObjectStream } = result
 
   runAsyncFnWithoutBlocking(async () => {
+    const { partialObjectStream } = result
     let ikpMessageObj
     for await (const partialObject of partialObjectStream) {
       chatMessage.update(partialObject.message?.content)
       ikpMessageObj = partialObject
     }
+
     // have this render the desired React component with the markdown parsing and citations
     chatMessage.done(ikpMessageObj?.message?.content)
     aiState.done({
@@ -230,8 +155,83 @@ async function submitMsgContextualStreamObject(content: string) {
   }
 }
 
+// uses the `inkeep-contextual` model to generate a plain text response
+async function submitMsgContextualStreamText(content: string){
+  "use server"
+
+  const aiState = getMutableAIState<typeof AI>()
+
+  aiState.update({
+    ...aiState.get(),
+    messages: [
+      ...aiState.get().messages,
+      {
+        id: nanoid(),
+        role: 'user',
+        content
+      }
+    ]
+  })
+
+  const result = await streamText({
+    model: openai('inkeep-contextual-gpt-4o'),
+    messages: [
+      {
+        role: 'system',
+        content: 'Respond in french'
+      },
+      {
+        role: 'system',
+        content: `
+            ## Persona
+            You are a helpful assistant for Vercel. You help answer user questions about Next.js, Vercel, Turborepo and other parts of the Vercel platform based only on documentation. 
+
+            ## Rule:
+            - Include inline citations for all the information you provide in the format of: [Title](URL).
+            - Ensure that all parts of your response are based on only the knowledge found in the information sources.
+            - Respond in plaintext, no markdown
+          `
+      },
+      {
+        role: 'user',
+        content: content
+      }
+    ],
+  })
+
+  const ui = createStreamableUI();
+
+  runAsyncFnWithoutBlocking(async () => {
+    const {textStream  } = result
+    let ikpMsg = ''
+    for await (const partialMessage of textStream) {
+      ikpMsg += partialMessage
+      ui.update(ikpMsg)
+    }
+    // have this render the desired React component with the markdown parsing and citations
+    ui.done();
+    aiState.done({
+      chatId: nanoid(),
+      messages: [
+        ...aiState.get().messages,
+        {
+          id: nanoid(),
+          role: 'assistant',
+          content: ikpMsg,
+          name: "inkeep-contextual-assistant-message"
+        }
+      ]
+    })
+  })
+
+  return {
+    id: nanoid(),
+    display: ui.value
+  }
+}
+
 // uses the `inkeep-qa` model to generate a JSON response (opinionated - always responds in predefined schema)
-async function submitMsgQAModelStreamObjectJSONMode(content: string) {
+async function submitMsgQAModelStreamObject(content: string) {
   'use server'
 
   const aiState = getMutableAIState<typeof AI>()
@@ -307,7 +307,7 @@ const actions = {
   submitMsgContextualStreamText,
   submitMsgContextualStreamUITools,
   submitMsgContextualStreamObject,
-  submitMsgQAModelStreamObjectJSONMode
+  submitMsgQAModelStreamObject
 }
 
 export type Actions = typeof actions

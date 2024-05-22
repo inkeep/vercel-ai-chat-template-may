@@ -28,7 +28,7 @@ export function PromptForm({
   const router = useRouter()
   const { formRef, onKeyDown } = useEnterSubmit()
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
-  const { submitMsgContextualStreamObject } = useActions() as Actions
+  const { submitMsgContextualStreamUITools } = useActions() as Actions
   const [_, setMessages] = useUIState<typeof AI>()
 
   React.useEffect(() => {
@@ -62,7 +62,7 @@ export function PromptForm({
         ])
 
         // Submit and get response message
-        const responseMessage = await submitMsgContextualStreamObject(value)
+        const responseMessage = await submitMsgContextualStreamUITools(value)
         setMessages(currentMessages => [...currentMessages, responseMessage])
       }}
     >
