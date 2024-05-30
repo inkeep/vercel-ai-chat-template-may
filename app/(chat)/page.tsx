@@ -5,6 +5,11 @@ import { auth } from '@/auth'
 import { Session } from '@/lib/types'
 import { getMissingKeys } from '@/app/actions'
 
+export const config = {
+  runtime: 'experimental-edge',
+  maxDuration: 300
+};
+
 export const metadata = {
   title: 'Next.js AI Chatbot'
 }
