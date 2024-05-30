@@ -52,7 +52,7 @@ async function submitMsgContextualStreamObject(content: string) {
     messages: [
       {
         role: "system",
-        content: "Generate step-by-step instructions to answer the user questions. Break it down to be as granular as possible"
+        content: "Generate step-by-step instructions to answer the user questions. Break it down to be as granular as possible. Always generate more than one step."
       },
       ...aiState.get().messages.map((message: any) => ({
         role: message.role,
