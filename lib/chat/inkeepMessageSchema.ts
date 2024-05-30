@@ -29,7 +29,7 @@ const CitationSchema = z.object({
 
 const RecordsCited = z.object({
     citations: z.array(CitationSchema)
-}).passthrough()
+}).passthrough().describe('Containes on property called `citations` that returns the records cited in the response')
 
 const AssistantMessage = z.object({
     content: z.string().describe('Answer to users question'),

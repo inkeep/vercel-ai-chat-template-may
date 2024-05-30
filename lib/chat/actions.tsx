@@ -4,20 +4,20 @@ import {
   createStreamableUI,
   createStreamableValue,
   getMutableAIState,
-  streamUI,
+  streamUI
 } from 'ai/rsc'
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateText, streamObject, streamText } from 'ai'
-import {
-  runAsyncFnWithoutBlocking,
-  nanoid
-} from '@/lib/utils'
+import { runAsyncFnWithoutBlocking, nanoid } from '@/lib/utils'
 import { saveChat } from '@/app/actions'
-import { Chat,Message } from '@/lib/types'
+import { Chat, Message } from '@/lib/types'
 import { auth } from '@/auth'
 import { InkeepJsonMessageSchema } from './inkeepMessageSchema'
 import test from 'node:test'
 import { z } from 'zod'
+import { StepByStepSchema } from './StepSchema'
+import { getClosestValidSchema } from './getClosestValidSchema'
+import { Step } from './Step'
 
 const openai = createOpenAI({
   apiKey: process.env.INKEEP_API_KEY,
@@ -45,11 +45,15 @@ async function submitMsgContextualStreamObject(content: string) {
   const chatMessage = createStreamableUI()
 
   const result = await streamObject({
-    model: openai('inkeep-contextual-gpt-4o'),
-    schema: InkeepJsonMessageSchema,
+    model: openai('inkeep-contextual-gpt-4-turbo'),
+    schema: StepByStepSchema,
     maxTokens: 4096,
     mode: 'tool',
     messages: [
+      {
+        role: "system",
+        content: "Generate step-by-step instructions to answer the user questions. Break it down to be as granular as possible"
+      },
       ...aiState.get().messages.map((message: any) => ({
         role: message.role,
         content: message.content,
@@ -58,17 +62,25 @@ async function submitMsgContextualStreamObject(content: string) {
     ]
   })
 
-
   runAsyncFnWithoutBlocking(async () => {
     const { partialObjectStream } = result
-    let ikpMessageObj
+    let content
+    let steps
+
     for await (const partialObject of partialObjectStream) {
-      chatMessage.update(partialObject.message?.content)
-      ikpMessageObj = partialObject
+      steps = (
+        <div className="flex flex-col space-y-4">
+          {partialObject.steps?.map((step, index) => (
+            <Step key={index} {...step} />
+          ))}
+        </div>
+      )
+      chatMessage.update(steps)
+      content = partialObject
     }
 
     // have this render the desired React component with the markdown parsing and citations
-    chatMessage.done(ikpMessageObj?.message?.content)
+    chatMessage.done(steps)
     aiState.done({
       chatId: nanoid(),
       messages: [
@@ -76,8 +88,8 @@ async function submitMsgContextualStreamObject(content: string) {
         {
           id: nanoid(),
           role: 'assistant',
-          content: ikpMessageObj?.message?.content || '',
-          name: "inkeep-contextual-assistant-message"
+          content: JSON.stringify(content) || '',
+          name: 'inkeep-contextual-assistant-message'
         }
       ]
     })
@@ -90,8 +102,8 @@ async function submitMsgContextualStreamObject(content: string) {
 }
 
 // uses the `inkeep-contextual` model to generate a plain text response
-async function submitMsgContextualStreamText(content: string){
-  "use server"
+async function submitMsgContextualStreamText(content: string) {
+  'use server'
 
   const aiState = getMutableAIState<typeof AI>()
 
@@ -130,20 +142,20 @@ async function submitMsgContextualStreamText(content: string){
         role: 'user',
         content: content
       }
-    ],
+    ]
   })
 
-  const ui = createStreamableUI();
+  const ui = createStreamableUI()
 
   runAsyncFnWithoutBlocking(async () => {
-    const {textStream  } = result
+    const { textStream } = result
     let ikpMsg = ''
     for await (const partialMessage of textStream) {
       ikpMsg += partialMessage
       ui.update(ikpMsg)
     }
     // have this render the desired React component with the markdown parsing and citations
-    ui.done();
+    ui.done()
     aiState.done({
       chatId: nanoid(),
       messages: [
@@ -152,7 +164,7 @@ async function submitMsgContextualStreamText(content: string){
           id: nanoid(),
           role: 'assistant',
           content: ikpMsg,
-          name: "inkeep-contextual-assistant-message"
+          name: 'inkeep-contextual-assistant-message'
         }
       ]
     })
@@ -183,11 +195,12 @@ async function submitMsgContextualStreamUITools(content: string) {
     ]
   })
   const result = await streamUI({
-    model: openai('inkeep-contextual-gpt-4o'),
+    model: openai('gpt-4-turbo'),
     messages: [
       {
         role: 'system',
-        content: 'Respond to the user question using the the answerInMarkdown tool.'
+        content:
+          'Respond to the user question using the the answerInMarkdown tool. Make up an artificial answer.'
       },
       ...aiState.get().messages.map((message: any) => ({
         role: message.role,
@@ -195,12 +208,14 @@ async function submitMsgContextualStreamUITools(content: string) {
         name: 'inkeep-contextual-user-message'
       }))
     ],
-    tools: { // define your own
+    tools: {
+      // define your own
       answerInMarkdown: {
         description: 'Answer the user question in markdown',
         parameters: InkeepJsonMessageSchema,
-        generate: async function* (answer: any){
-          yield <>${JSON.stringify(answer)}</>;
+        generate: async function* (answer: any) {
+          console.log('Yielding answer:', answer)
+          yield <>${JSON.stringify(answer)}</>
 
           aiState.done({
             chatId: nanoid(),
@@ -210,13 +225,13 @@ async function submitMsgContextualStreamUITools(content: string) {
                 id: nanoid(),
                 role: 'assistant',
                 content: answer.message.content,
-                name: "inkeep-contextual-assistant-message"
+                name: 'inkeep-contextual-assistant-message'
               }
             ]
           })
 
           return <>${JSON.stringify(answer)}</>
-        },
+        }
       }
     }
   })
@@ -278,7 +293,7 @@ async function submitMsgQAModelStreamObject(content: string) {
           id: nanoid(),
           role: 'assistant',
           content: ikpMessageObj?.message?.content || '',
-          name: "inkeep-qa-assistant-message"
+          name: 'inkeep-qa-assistant-message'
         }
       ]
     })
