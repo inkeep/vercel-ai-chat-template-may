@@ -16,7 +16,7 @@ export const StepSchema = z
   .object({
     headline: z
       .string()
-      .describe('The main point or title of the step. E.g. "Install package".'),
+      .describe('The main point or title of the step. E.g. "Install package". Number your steps, e.g. "1. Get Started"'),
     content: z
       .string()
       .describe(
