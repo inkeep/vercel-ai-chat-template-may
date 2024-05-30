@@ -6,7 +6,7 @@ import { Session } from '@/lib/types'
 import { getMissingKeys } from '@/app/actions'
 
 export const config = {
-  runtime: 'experimental-edge',
+  runtime: 'nodejs',
   maxDuration: 300
 };
 
