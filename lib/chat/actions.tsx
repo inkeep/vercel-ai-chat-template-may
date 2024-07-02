@@ -52,7 +52,7 @@ async function submitMsgContextualStreamObject(content: string) {
     messages: [
       {
         role: "system",
-        content: "Generate step-by-step instructions to answer the user questions. Break it down to be as granular as possible. Always generate more than one step."
+        content: "Generate step-by-step instructions to answer the user question about Vercel only based on the information sources. Break it down to be as granular as possible. Always generate more than one step."
       },
       ...aiState.get().messages.map((message: any) => ({
         role: message.role,
@@ -195,7 +195,7 @@ async function submitMsgContextualStreamUITools(content: string) {
     ]
   })
   const result = await streamUI({
-    model: openai('gpt-4-turbo'),
+    model: openai('inkeep-contextual-gpt-4o'),
     messages: [
       {
         role: 'system',
@@ -234,6 +234,45 @@ async function submitMsgContextualStreamUITools(content: string) {
         }
       }
     }
+  })
+
+  return {
+    id: nanoid(),
+    display: result.value
+  }
+}
+
+// uses the `inkeep-qa` model to generate a json response and stream the UI using streamUI
+async function submitMsgQAStreamUI(content: string) {
+  'use server'
+
+  const aiState = getMutableAIState<typeof AI>()
+
+  aiState.update({
+    ...aiState.get(),
+    messages: [
+      ...aiState.get().messages,
+      {
+        id: nanoid(),
+        role: 'user',
+        content
+      }
+    ]
+  })
+  const result = await streamUI({
+    model: openai('inkeep-qa-gpt-4o'),
+    messages: [
+      {
+        role: 'system',
+        content:
+          'Respond to the user question using the the answerInMarkdown tool. Make up an artificial answer.'
+      },
+      ...aiState.get().messages.map((message: any) => ({
+        role: message.role,
+        content: message.content,
+        name: 'inkeep-contextual-user-message'
+      }))
+    ],
   })
 
   return {
