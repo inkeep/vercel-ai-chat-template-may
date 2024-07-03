@@ -3,7 +3,7 @@ import { StepSchema } from './StepSchema'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { DeepPartial } from 'ai'
 import { MemoizedReactMarkdown } from '@/components/markdown'
-import { Sources } from '@/components/source'
+import { Sources } from '@/components/sources'
 
 export function Step({
   headline,
@@ -17,7 +17,7 @@ export function Step({
         <MemoizedReactMarkdown>{content || ''}</MemoizedReactMarkdown>
       </AlertDescription>
       <div className="my-2 h-px bg-gray-300"></div>
-      <Sources sources={sources}></Sources>
+      {/* <Sources sources={sources}></Sources> */}
     </Alert>
   )
 }
