@@ -27,7 +27,7 @@ const CitationSchema = z.object({
     hitUrl: z.string().optional(),
 }).passthrough().describe('List of citations from the information sources used to answer the users question. If using citations, incorporate them into the response in the format `[number](url)` where number corresponds to the order you use them')
 
-const RecordsCited = z.object({
+export const RecordsCitedSchema = z.object({
     citations: z.array(CitationSchema)
 }).passthrough().describe('Containes on property called `citations` that returns the records cited in the response')
 
@@ -38,5 +38,5 @@ const AssistantMessage = z.object({
 
 export const InkeepJsonMessageSchema = z.object({
     message: AssistantMessage,
-    recordsCited: RecordsCited.optional(),
+    recordsCited: RecordsCitedSchema.optional(),
 }).passthrough();

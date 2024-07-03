@@ -2,27 +2,88 @@ import 'server-only'
 import {
   createAI,
   createStreamableUI,
-  createStreamableValue,
   getMutableAIState,
   streamUI
 } from 'ai/rsc'
 import { createOpenAI } from '@ai-sdk/openai'
-import { generateText, streamObject, streamText } from 'ai'
+import { streamObject, streamText } from 'ai'
 import { runAsyncFnWithoutBlocking, nanoid } from '@/lib/utils'
-import { saveChat } from '@/app/actions'
-import { Chat, Message } from '@/lib/types'
-import { auth } from '@/auth'
+import { Message } from '@/lib/types'
 import { InkeepJsonMessageSchema } from './inkeepMessageSchema'
-import test from 'node:test'
-import { z } from 'zod'
 import { StepByStepSchema } from './StepSchema'
-import { getClosestValidSchema } from './getClosestValidSchema'
 import { Step } from './Step'
+import { InkeepMessage } from './InkeepMessage'
 
 const openai = createOpenAI({
   apiKey: process.env.INKEEP_API_KEY,
   baseURL: 'https://api.inkeep.com/v1'
 })
+
+// uses the `inkeep-qa` model to generate a predefined JSON response that includes a message and citations (opinionated)
+async function submitMsgQAModelStreamObject(content: string) {
+  'use server'
+
+  const aiState = getMutableAIState<typeof AI>()
+
+  aiState.update({
+    ...aiState.get(),
+    messages: [
+      ...aiState.get().messages,
+      {
+        id: nanoid(),
+        role: 'user',
+        content
+      }
+    ]
+  })
+
+  const chatMessage = createStreamableUI()
+
+  const result = await streamObject({
+    model: openai('inkeep-qa-gpt-4o'),
+    schema: InkeepJsonMessageSchema,
+    mode: 'json',
+    messages: [
+      ...aiState.get().messages.map((message: any) => ({
+        role: message.role,
+        content: message.content,
+        name: 'inkeep-qa-user-message'
+      }))
+    ]
+  })
+
+  const { partialObjectStream } = result
+
+  runAsyncFnWithoutBlocking(async () => {
+    let ikpMessageObj
+    for await (const partialObject of partialObjectStream) {
+      ikpMessageObj = partialObject
+      chatMessage.update(<InkeepMessage {...ikpMessageObj} />)
+    }
+
+    // have this render the desired React component with the markdown parsing and citations
+    chatMessage.done(<InkeepMessage {...ikpMessageObj} />)
+
+    aiState.done({
+      chatId: nanoid(),
+      messages: [
+        ...aiState.get().messages,
+        {
+          id: nanoid(),
+          role: 'assistant',
+          content: ikpMessageObj?.message?.content || '',
+          recordsCited: ikpMessageObj?.recordsCited,
+          name: 'inkeep-qa-assistant-message'
+        }
+      ]
+    })
+  })
+
+  return {
+    id: nanoid(),
+    display: chatMessage.value
+  }
+}
 
 // uses the `inkeep-contextual` model to generate an object using streamObject
 async function submitMsgContextualStreamObject(content: string) {
@@ -51,8 +112,9 @@ async function submitMsgContextualStreamObject(content: string) {
     mode: 'tool',
     messages: [
       {
-        role: "system",
-        content: "Generate step-by-step instructions to answer the user question about Vercel only based on the information sources. Break it down to be as granular as possible. Always generate more than one step."
+        role: 'system',
+        content:
+          'Generate step-by-step instructions to answer the user question about Vercel only based on the information sources. Break it down to be as granular as possible. Always generate more than one step.'
       },
       ...aiState.get().messages.map((message: any) => ({
         role: message.role,
@@ -239,108 +301,6 @@ async function submitMsgContextualStreamUITools(content: string) {
   return {
     id: nanoid(),
     display: result.value
-  }
-}
-
-// uses the `inkeep-qa` model to generate a json response and stream the UI using streamUI
-async function submitMsgQAStreamUI(content: string) {
-  'use server'
-
-  const aiState = getMutableAIState<typeof AI>()
-
-  aiState.update({
-    ...aiState.get(),
-    messages: [
-      ...aiState.get().messages,
-      {
-        id: nanoid(),
-        role: 'user',
-        content
-      }
-    ]
-  })
-  const result = await streamUI({
-    model: openai('inkeep-qa-gpt-4o'),
-    messages: [
-      {
-        role: 'system',
-        content:
-          'Respond to the user question using the the answerInMarkdown tool. Make up an artificial answer.'
-      },
-      ...aiState.get().messages.map((message: any) => ({
-        role: message.role,
-        content: message.content,
-        name: 'inkeep-contextual-user-message'
-      }))
-    ],
-  })
-
-  return {
-    id: nanoid(),
-    display: result.value
-  }
-}
-
-// uses the `inkeep-qa` model to generate a JSON response (opinionated - always responds in predefined schema)
-async function submitMsgQAModelStreamObject(content: string) {
-  'use server'
-
-  const aiState = getMutableAIState<typeof AI>()
-
-  aiState.update({
-    ...aiState.get(),
-    messages: [
-      ...aiState.get().messages,
-      {
-        id: nanoid(),
-        role: 'user',
-        content
-      }
-    ]
-  })
-
-  const chatMessage = createStreamableUI()
-
-  const result = await streamObject({
-    model: openai('inkeep-qa-gpt-4o'),
-    schema: InkeepJsonMessageSchema,
-    mode: 'json',
-    messages: [
-      ...aiState.get().messages.map((message: any) => ({
-        role: message.role,
-        content: message.content,
-        name: 'inkeep-qa-user-message'
-      }))
-    ]
-  })
-
-  const { partialObjectStream } = result
-
-  runAsyncFnWithoutBlocking(async () => {
-    let ikpMessageObj
-    for await (const partialObject of partialObjectStream) {
-      chatMessage.update(partialObject.message?.content)
-      ikpMessageObj = partialObject
-    }
-    // have this render the desired React component with the markdown parsing and citations
-    chatMessage.done(ikpMessageObj?.message?.content)
-    aiState.done({
-      chatId: nanoid(),
-      messages: [
-        ...aiState.get().messages,
-        {
-          id: nanoid(),
-          role: 'assistant',
-          content: ikpMessageObj?.message?.content || '',
-          name: 'inkeep-qa-assistant-message'
-        }
-      ]
-    })
-  })
-
-  return {
-    id: nanoid(),
-    display: chatMessage.value
   }
 }
 

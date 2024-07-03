@@ -1,8 +1,12 @@
 import { CoreMessage } from 'ai'
+import { RecordsCitedSchema } from './chat/inkeepMessageSchema'
+import { z } from 'zod'
+import { DeepPartial } from 'ai'
 
 export type Message = CoreMessage & {
   id: string,
   name?: string
+  recordsCited?: DeepPartial<z.infer<typeof RecordsCitedSchema>>
 }
 
 export interface Chat extends Record<string, any> {
