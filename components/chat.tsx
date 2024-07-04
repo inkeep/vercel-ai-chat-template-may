@@ -10,7 +10,10 @@ import { useUIState, useAIState } from 'ai/rsc'
 import { Message, Session } from '@/lib/types'
 import { usePathname, useRouter } from 'next/navigation'
 import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
+import { experimental_useObject } from 'ai/react'
 import { toast } from 'sonner'
+import { InkeepMessage } from '@/lib/chat/InkeepMessage'
+import { InkeepJsonMessageSchema } from '@/lib/chat/inkeepMessageSchema'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
@@ -56,6 +59,27 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   const { messagesRef, scrollRef, visibilityRef, isAtBottom, scrollToBottom } =
     useScrollAnchor()
 
+  const object = null
+  const submit = undefined
+  const isLoading = false
+  const stop = () => {}
+
+  // Comment out above and uncomment below to test with experimental_useObject
+  // const { object, submit, isLoading, error, stop } = experimental_useObject({
+  //   api: '/api/chat_messages',
+  //   schema: InkeepJsonMessageSchema,
+    // initialValue: {
+    //   message: {
+    //     // id: nanoid(),
+    //     role: 'user',
+    //     content: input
+    //   },
+    //   citations: []
+    // }
+  // })
+
+  console.log({ object, isLoading, input, messages, aiState })
+
   return (
     <div
       className="group w-full overflow-auto pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px]"
@@ -70,6 +94,23 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
         ) : (
           <EmptyScreen />
         )}
+
+        {object?.message && (
+          <div className="relative mx-auto max-w-2xl px-4">
+            <InkeepMessage
+              message={object?.message}
+              recordsCited={object?.recordsCited}
+            />
+
+            {/* {messages.map((message, index) => (
+  <div key={message.id}>
+    {message.display}
+    {index < messages.length - 1 && <Separator className="my-4" />}
+  </div>
+))} */}
+          </div>
+        )}
+
         <div className="w-full h-px" ref={visibilityRef} />
       </div>
       <ChatPanel
@@ -78,6 +119,8 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
         setInput={setInput}
         isAtBottom={isAtBottom}
         scrollToBottom={scrollToBottom}
+        submitMessage={submit}
+        stopRequest={stop}
       />
     </div>
   )
