@@ -14,6 +14,8 @@ import { experimental_useObject } from 'ai/react'
 import { toast } from 'sonner'
 import { InkeepMessage } from '@/lib/chat/InkeepMessage'
 import { InkeepJsonMessageSchema } from '@/lib/chat/inkeepMessageSchema'
+import { nanoid } from 'nanoid'
+import { UserMessage } from './stocks/message'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
@@ -59,26 +61,141 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   const { messagesRef, scrollRef, visibilityRef, isAtBottom, scrollToBottom } =
     useScrollAnchor()
 
-  const object = null
-  const submit = undefined
-  const isLoading = false
-  const stop = () => {}
+  return (
+    <div
+      className="group w-full overflow-auto pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px]"
+      ref={scrollRef}
+    >
+      <div
+        className={cn('pb-[200px] pt-4 md:pt-10', className)}
+        ref={messagesRef}
+      >
+        {messages.length ? (
+          <ChatList messages={messages} isShared={false} session={session} />
+        ) : (
+          <EmptyScreen />
+        )}
+        <div className="w-full h-px" ref={visibilityRef} />
+      </div>
+      <ChatPanel
+        id={id}
+        input={input}
+        setInput={setInput}
+        isAtBottom={isAtBottom}
+        scrollToBottom={scrollToBottom}
+      />
+    </div>
+  )
+}
 
-  // Comment out above and uncomment below to test with experimental_useObject
-  // const { object, submit, isLoading, error, stop } = experimental_useObject({
-  //   api: '/api/chat_messages',
-  //   schema: InkeepJsonMessageSchema,
-    // initialValue: {
-    //   message: {
-    //     // id: nanoid(),
-    //     role: 'user',
-    //     content: input
-    //   },
-    //   citations: []
-    // }
-  // })
+export function ChatComponentWithUseObject({ id, className, session, missingKeys }: ChatProps) {
+  const router = useRouter()
+  const path = usePathname()
+  const [input, setInput] = useState('')
+  const [messages, setMessages] = useUIState()
+  const [aiState, setAiState] = useAIState()
 
-  console.log({ object, isLoading, input, messages, aiState })
+  const [_, setNewChatId] = useLocalStorage('newChatId', id)
+
+  useEffect(() => {
+    if (session?.user) {
+      if (!path.includes('chat') && messages.length === 1) {
+        window.history.replaceState({}, '', `/chat/${id}`)
+      }
+    }
+  }, [id, path, session?.user, messages])
+
+  useEffect(() => {
+    const messagesLength = aiState.messages?.length
+    if (messagesLength === 2) {
+      router.refresh()
+    }
+  }, [aiState.messages, router])
+
+  useEffect(() => {
+    setNewChatId(id)
+  })
+
+  useEffect(() => {
+    missingKeys.map(key => {
+      toast.error(`Missing ${key} environment variable!`)
+    })
+  }, [missingKeys])
+
+  const { messagesRef, scrollRef, visibilityRef, isAtBottom, scrollToBottom } =
+    useScrollAnchor()
+
+  const { object, submit, isLoading, error, stop } = experimental_useObject({
+    api: '/api/chat_messages',
+    schema: InkeepJsonMessageSchema
+    // initialValue: {}
+  })
+
+  const submitMessage = (value: any) => {
+    const idToUse = nanoid()
+    setAiState({
+      ...aiState,
+      messages: [
+        ...aiState.messages,
+        {
+          id: idToUse,
+          role: 'user',
+          content: value
+        }
+      ]
+    })
+    setMessages((currentMessages: any) => [
+      ...currentMessages,
+      {
+        id: nanoid(),
+        display: <UserMessage>{value}</UserMessage>
+      }
+    ])
+
+    submit({
+      messages: [
+        ...aiState.messages,
+        {
+          role: 'user',
+          content: value
+        }
+      ]
+    })
+  }
+
+  useEffect(() => {
+    if (object?.message) {
+      const responseMessage = {
+        id: nanoid(),
+        display: <InkeepMessage {...object} />
+      }
+
+      const responseMessageForAIState = {
+        // id: nanoid(),
+        role: 'assistant',
+        content: object?.message?.content || '',
+        recordsCited: object?.recordsCited,
+        name: 'inkeep-qa-assistant-message'
+      }
+
+      if (aiState.messages[aiState.messages.length - 1]?.role === 'assistant') {
+        setAiState({
+          ...aiState,
+          messages: [
+            ...aiState.messages.slice(0, -1),
+            responseMessageForAIState
+          ]
+        })
+        setMessages([...messages.slice(0, -1), responseMessage])
+      } else {
+        setAiState({
+          ...aiState,
+          messages: [...aiState.messages, responseMessageForAIState]
+        })
+        setMessages([...messages, responseMessage])
+      }
+    }
+  }, [object])
 
   return (
     <div
@@ -94,23 +211,6 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
         ) : (
           <EmptyScreen />
         )}
-
-        {object?.message && (
-          <div className="relative mx-auto max-w-2xl px-4">
-            <InkeepMessage
-              message={object?.message}
-              recordsCited={object?.recordsCited}
-            />
-
-            {/* {messages.map((message, index) => (
-  <div key={message.id}>
-    {message.display}
-    {index < messages.length - 1 && <Separator className="my-4" />}
-  </div>
-))} */}
-          </div>
-        )}
-
         <div className="w-full h-px" ref={visibilityRef} />
       </div>
       <ChatPanel
@@ -119,7 +219,7 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
         setInput={setInput}
         isAtBottom={isAtBottom}
         scrollToBottom={scrollToBottom}
-        submitMessage={submit}
+        submitMessage={submitMessage}
         stopRequest={stop}
       />
     </div>

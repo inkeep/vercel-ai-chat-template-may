@@ -11,11 +11,7 @@ const openai = createOpenAI({
   baseURL: 'https://api.inkeep.com/v1'
 })
 
-// Allow streaming responses up to 30 seconds
-// export const maxDuration = 30
-
 // uses the `inkeep-qa` model to generate a predefined JSON response that includes a message and citations (opinionated)
-
 export async function POST(req: Request) {
   const content = await req.json()
 
@@ -24,10 +20,11 @@ export async function POST(req: Request) {
     schema: InkeepJsonMessageSchema,
     mode: 'json',
     messages: [
-      {
-        role: 'user',
-        content
-      }
+      ...content.messages.map((message: any) => ({
+        role: message.role,
+        content: message.content,
+        name: 'inkeep-qa-user-message'
+      }))
     ]
   })
 

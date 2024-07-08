@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Textarea from 'react-textarea-autosize'
 
-import { useAIState, useActions, useUIState } from 'ai/rsc'
+import { useActions, useUIState } from 'ai/rsc'
 
 import { UserMessage } from './stocks/message'
 import { Actions, type AI } from '@/lib/chat/actions'
@@ -115,13 +115,18 @@ export function PromptForm({
               </Button>
             </TooltipTrigger>
             <TooltipContent>Send message</TooltipContent>
-            <TooltipTrigger asChild>
-              <Button size="icon" onClick={stopRequest}>
-                <IconStop />
-                <span className="sr-only">Stop AI</span>
-              </Button>
-            </TooltipTrigger>
           </Tooltip>
+          {stopRequest && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" onClick={stopRequest}>
+                  <IconStop />
+                  <span className="sr-only">Stop AI</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Stop AI</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
     </form>

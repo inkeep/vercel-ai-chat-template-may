@@ -1,5 +1,5 @@
 import { nanoid } from '@/lib/utils'
-import { Chat } from '@/components/chat'
+import { Chat, ChatComponentWithUseObject } from '@/components/chat'
 import { AI } from '@/lib/chat/actions'
 import { auth } from '@/auth'
 import { Session } from '@/lib/types'
@@ -19,7 +19,9 @@ export default async function IndexPage() {
 
   return (
     <AI initialAIState={{ chatId: id, messages: [] }}>
-      <Chat id={id} session={session} missingKeys={missingKeys} />
+      {/* <Chat id={id} session={session} missingKeys={missingKeys} /> */}
+
+      <ChatComponentWithUseObject id={id} session={session} missingKeys={missingKeys} />
     </AI>
   )
 }
