@@ -93,7 +93,7 @@ export function ChatComponentWithUseObject({ id, className, session, missingKeys
   const path = usePathname()
   const [input, setInput] = useState('')
   const [messages, setMessages] = useUIState()
-  const [aiState, setAiState] = useAIState()
+  const [aiState, setAIState] = useAIState()
 
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
 
@@ -125,7 +125,7 @@ export function ChatComponentWithUseObject({ id, className, session, missingKeys
   const { messagesRef, scrollRef, visibilityRef, isAtBottom, scrollToBottom } =
     useScrollAnchor()
 
-  const { object, submit, isLoading, error, stop } = experimental_useObject({
+  const { object: streamResponseObject, submit, isLoading, error, stop } = experimental_useObject({
     api: '/api/chat_messages',
     schema: InkeepJsonMessageSchema
     // initialValue: {}
@@ -133,7 +133,7 @@ export function ChatComponentWithUseObject({ id, className, session, missingKeys
 
   const submitMessage = (value: any) => {
     const idToUse = nanoid()
-    setAiState({
+    setAIState({
       ...aiState,
       messages: [
         ...aiState.messages,
@@ -164,38 +164,38 @@ export function ChatComponentWithUseObject({ id, className, session, missingKeys
   }
 
   useEffect(() => {
-    if (object?.message) {
-      const responseMessage = {
+    if (streamResponseObject?.message) {
+      const responseMessageForUIState = {
         id: nanoid(),
-        display: <InkeepMessage {...object} />
+        display: <InkeepMessage {...streamResponseObject} />
       }
 
       const responseMessageForAIState = {
         // id: nanoid(),
         role: 'assistant',
-        content: object?.message?.content || '',
-        recordsCited: object?.recordsCited,
+        content: streamResponseObject?.message?.content || '',
+        recordsCited: streamResponseObject?.recordsCited,
         name: 'inkeep-qa-assistant-message'
       }
 
       if (aiState.messages[aiState.messages.length - 1]?.role === 'assistant') {
-        setAiState({
+        setAIState({
           ...aiState,
           messages: [
             ...aiState.messages.slice(0, -1),
             responseMessageForAIState
           ]
         })
-        setMessages([...messages.slice(0, -1), responseMessage])
+        setMessages([...messages.slice(0, -1), responseMessageForUIState])
       } else {
-        setAiState({
+        setAIState({
           ...aiState,
           messages: [...aiState.messages, responseMessageForAIState]
         })
-        setMessages([...messages, responseMessage])
+        setMessages([...messages, responseMessageForUIState])
       }
     }
-  }, [object])
+  }, [streamResponseObject])
 
   return (
     <div
