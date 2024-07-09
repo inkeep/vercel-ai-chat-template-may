@@ -8,7 +8,7 @@ import { useActions, useUIState } from 'ai/rsc'
 import { UserMessage } from './stocks/message'
 import { Actions, type AI } from '@/lib/chat/actions'
 import { Button } from '@/components/ui/button'
-import { IconArrowElbow, IconPlus } from '@/components/ui/icons'
+import { IconArrowElbow, IconPlus, IconStop } from '@/components/ui/icons'
 import {
   Tooltip,
   TooltipContent,
@@ -20,10 +20,14 @@ import { useRouter } from 'next/navigation'
 
 export function PromptForm({
   input,
-  setInput
+  setInput,
+  submitMessage,
+  stopRequest
 }: {
   input: string
   setInput: (value: string) => void
+  submitMessage?: (value: string) => void
+  stopRequest?: () => void
 }) {
   const router = useRouter()
   const { formRef, onKeyDown } = useEnterSubmit()
@@ -52,18 +56,22 @@ export function PromptForm({
         setInput('')
         if (!value) return
 
-        // Optimistically add user message UI
-        setMessages(currentMessages => [
-          ...currentMessages,
-          {
-            id: nanoid(),
-            display: <UserMessage>{value}</UserMessage>
-          }
-        ])
+        if (submitMessage) {
+          submitMessage(value)
+        } else {
+          // Optimistically add user message UI
+          setMessages(currentMessages => [
+            ...currentMessages,
+            {
+              id: nanoid(),
+              display: <UserMessage>{value}</UserMessage>
+            }
+          ])
 
-        // Submit and get response message
-        const responseMessage = await submitMsgQAModelStreamObject(value)
-        setMessages(currentMessages => [...currentMessages, responseMessage])
+          // Submit and get response message
+          const responseMessage = await submitMsgQAModelStreamObject(value)
+          setMessages(currentMessages => [...currentMessages, responseMessage])
+        }
       }}
     >
       <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-background px-8 sm:rounded-md sm:border sm:px-12">
@@ -108,6 +116,17 @@ export function PromptForm({
             </TooltipTrigger>
             <TooltipContent>Send message</TooltipContent>
           </Tooltip>
+          {stopRequest && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button className="ml-4" size="icon" onClick={stopRequest}>
+                  <IconStop />
+                  <span className="sr-only">Stop AI</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Stop AI</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
     </form>
