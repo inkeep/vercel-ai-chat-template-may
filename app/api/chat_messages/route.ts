@@ -13,19 +13,20 @@ const openai = createOpenAI({
 
 // uses the `inkeep-qa` model to generate a predefined JSON response that includes a message and citations (opinionated)
 export async function POST(req: Request) {
-  const content = await req.json()
+  const reqJson = await req.json()
 
   const result = await streamObject({
     model: openai('inkeep-qa-gpt-4o'),
     schema: InkeepJsonMessageSchema,
     mode: 'json',
-    messages: [
-      ...content.messages.map((message: any) => ({
+    messages: reqJson.messages.map((message: any) => {
+      return {
         role: message.role,
         content: message.content,
-        name: 'inkeep-qa-user-message'
-      }))
-    ]
+        name: 'inkeep-qa-user-message',
+        id: message.id
+      }
+    })
   })
 
   return result.toTextStreamResponse()

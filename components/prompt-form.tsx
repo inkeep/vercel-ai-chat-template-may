@@ -119,7 +119,7 @@ export function PromptForm({
           {stopRequest && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon" onClick={stopRequest}>
+                <Button className="ml-4" size="icon" onClick={stopRequest}>
                   <IconStop />
                   <span className="sr-only">Stop AI</span>
                 </Button>

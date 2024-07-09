@@ -16,6 +16,7 @@ import { InkeepMessage } from '@/lib/chat/InkeepMessage'
 import { InkeepJsonMessageSchema } from '@/lib/chat/inkeepMessageSchema'
 import { nanoid } from 'nanoid'
 import { UserMessage } from './stocks/message'
+import { AIState } from '@/lib/chat/actions'
 
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
@@ -88,12 +89,19 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   )
 }
 
-export function ChatComponentWithUseObject({ id, className, session, missingKeys }: ChatProps) {
+export function ChatComponentWithUseObject({
+  id,
+  className,
+  session,
+  missingKeys
+}: ChatProps) {
   const router = useRouter()
   const path = usePathname()
   const [input, setInput] = useState('')
   const [messages, setMessages] = useUIState()
   const [aiState, setAIState] = useAIState()
+  const [currentResponseID, setCurrentResponseID] = useState('')
+  const [lastResponseObjectMessage, setLastResponseObjectMessage] = useState('')
 
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
 
@@ -125,29 +133,39 @@ export function ChatComponentWithUseObject({ id, className, session, missingKeys
   const { messagesRef, scrollRef, visibilityRef, isAtBottom, scrollToBottom } =
     useScrollAnchor()
 
-  const { object: streamResponseObject, submit, isLoading, error, stop } = experimental_useObject({
+  const {
+    object: streamResponseObject,
+    submit,
+    isLoading,
+    error,
+    stop
+  } = experimental_useObject({
     api: '/api/chat_messages',
     schema: InkeepJsonMessageSchema
-    // initialValue: {}
   })
 
+  console.log({ streamResponseObject, isLoading, aiState, messages })
+
   const submitMessage = (value: any) => {
-    const idToUse = nanoid()
-    setAIState({
-      ...aiState,
+    // set AI state and UI state
+    const IDForUserInput = nanoid()
+
+    setAIState((currentAIState: any) => ({
+      ...currentAIState,
       messages: [
-        ...aiState.messages,
+        ...currentAIState.messages,
         {
-          id: idToUse,
+          id: IDForUserInput,
           role: 'user',
           content: value
         }
       ]
-    })
+    }))
+
     setMessages((currentMessages: any) => [
       ...currentMessages,
       {
-        id: nanoid(),
+        id: nanoid(), 
         display: <UserMessage>{value}</UserMessage>
       }
     ])
@@ -157,45 +175,58 @@ export function ChatComponentWithUseObject({ id, className, session, missingKeys
         ...aiState.messages,
         {
           role: 'user',
-          content: value
+          content: value,
+          id: IDForUserInput
         }
       ]
     })
+
+    setCurrentResponseID(nanoid())
   }
 
   useEffect(() => {
-    if (streamResponseObject?.message) {
+    const isMessageContentNew = streamResponseObject?.message?.content !== lastResponseObjectMessage
+
+    if (streamResponseObject?.message && isMessageContentNew && currentResponseID && isLoading) {
       const responseMessageForUIState = {
-        id: nanoid(),
+        id: currentResponseID,
         display: <InkeepMessage {...streamResponseObject} />
       }
 
       const responseMessageForAIState = {
-        // id: nanoid(),
+        id: currentResponseID,
         role: 'assistant',
         content: streamResponseObject?.message?.content || '',
         recordsCited: streamResponseObject?.recordsCited,
         name: 'inkeep-qa-assistant-message'
       }
 
-      if (aiState.messages[aiState.messages.length - 1]?.role === 'assistant') {
-        setAIState({
+      if (
+        aiState.messages[aiState.messages.length - 1]?.id ===
+        currentResponseID
+      ) {
+        setAIState((aiState: AIState) => ({
           ...aiState,
           messages: [
             ...aiState.messages.slice(0, -1),
             responseMessageForAIState
           ]
-        })
-        setMessages([...messages.slice(0, -1), responseMessageForUIState])
+        }))
+        setMessages((messages: any) => ([...messages.slice(0, -1), responseMessageForUIState]))
       } else {
-        setAIState({
+        setAIState((aiState: AIState) => ({
           ...aiState,
           messages: [...aiState.messages, responseMessageForAIState]
-        })
-        setMessages([...messages, responseMessageForUIState])
+        }))
+        setMessages((messages: any) => ([...messages, responseMessageForUIState]))
       }
     }
-  }, [streamResponseObject])
+
+    if (streamResponseObject && !isLoading && currentResponseID) {
+      setCurrentResponseID('')
+      setLastResponseObjectMessage(streamResponseObject.message?.content || '')
+    }
+  }, [streamResponseObject, currentResponseID, isLoading, lastResponseObjectMessage])
 
   return (
     <div
