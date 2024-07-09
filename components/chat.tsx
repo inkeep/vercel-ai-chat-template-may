@@ -144,8 +144,6 @@ export function ChatComponentWithUseObject({
     schema: InkeepJsonMessageSchema
   })
 
-  console.log({ streamResponseObject, isLoading, aiState, messages })
-
   const submitMessage = (value: any) => {
     // set AI state and UI state
     const IDForUserInput = nanoid()
