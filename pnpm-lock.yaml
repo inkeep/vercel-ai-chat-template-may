@@ -52,7 +52,7 @@ dependencies:
     version: 2.0.6
   ai:
     specifier: ^3.2.16
-    version: 3.2.16(openai@4.52.2)(react@18.3.1)(svelte@4.2.18)(vue@3.4.31)(zod@3.23.8)
+    version: 3.2.16(openai@4.52.2)(react@18.3.1)(svelte@4.2.19)(vue@3.4.31)(zod@3.23.8)
   class-variance-authority:
     specifier: ^0.7.0
     version: 0.7.0
@@ -277,7 +277,7 @@ packages:
       - zod
     dev: false
 
-  /@ai-sdk/svelte@0.0.12(svelte@4.2.18)(zod@3.23.8):
+  /@ai-sdk/svelte@0.0.12(svelte@4.2.19)(zod@3.23.8):
     resolution: {integrity: sha512-pSgIQhu0H2MRuoi/oj/5sq7UIK7Nm1oLRmZQ0tz2iQeqO2uo3Pe0si4n7lo8gb8gOMCyqJtqteb13A7rAlusfQ==}
     engines: {node: '>=18'}
     peerDependencies:
@@ -288,8 +288,8 @@ packages:
     dependencies:
       '@ai-sdk/provider-utils': 1.0.0(zod@3.23.8)
       '@ai-sdk/ui-utils': 0.0.9(zod@3.23.8)
-      sswr: 2.1.0(svelte@4.2.18)
-      svelte: 4.2.18
+      sswr: 2.1.0(svelte@4.2.19)
+      svelte: 4.2.19
     transitivePeerDependencies:
       - zod
     dev: false
@@ -1960,7 +1960,7 @@ packages:
       humanize-ms: 1.2.1
     dev: false
 
-  /ai@3.2.16(openai@4.52.2)(react@18.3.1)(svelte@4.2.18)(vue@3.4.31)(zod@3.23.8):
+  /ai@3.2.16(openai@4.52.2)(react@18.3.1)(svelte@4.2.19)(vue@3.4.31)(zod@3.23.8):
     resolution: {integrity: sha512-kNqnmSQxUm3dcxLv/NoOusoMAq7EK/zahB/N//wkGoawgYqfOUpvz3+uS/FG52tZwMyy4YblVoeuBHpfPWzNDw==}
     engines: {node: '>=18'}
     peerDependencies:
@@ -1982,7 +1982,7 @@ packages:
       '@ai-sdk/provider-utils': 1.0.0(zod@3.23.8)
       '@ai-sdk/react': 0.0.16(react@18.3.1)(zod@3.23.8)
       '@ai-sdk/solid': 0.0.11(zod@3.23.8)
-      '@ai-sdk/svelte': 0.0.12(svelte@4.2.18)(zod@3.23.8)
+      '@ai-sdk/svelte': 0.0.12(svelte@4.2.19)(zod@3.23.8)
       '@ai-sdk/ui-utils': 0.0.9(zod@3.23.8)
       '@ai-sdk/vue': 0.0.11(vue@3.4.31)(zod@3.23.8)
       eventsource-parser: 1.1.2
@@ -1992,8 +1992,8 @@ packages:
       openai: 4.52.2
       react: 18.3.1
       secure-json-parse: 2.7.0
-      sswr: 2.1.0(svelte@4.2.18)
-      svelte: 4.2.18
+      sswr: 2.1.0(svelte@4.2.19)
+      svelte: 4.2.19
       zod: 3.23.8
       zod-to-json-schema: 3.22.5(zod@3.23.8)
     transitivePeerDependencies:
@@ -5893,12 +5893,12 @@ packages:
     resolution: {integrity: sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q==}
     dev: false
 
-  /sswr@2.1.0(svelte@4.2.18):
+  /sswr@2.1.0(svelte@4.2.19):
     resolution: {integrity: sha512-Cqc355SYlTAaUt8iDPaC/4DPPXK925PePLMxyBKuWd5kKc5mwsG3nT9+Mq2tyguL5s7b4Jg+IRMpTRsNTAfpSQ==}
     peerDependencies:
       svelte: ^4.0.0 || ^5.0.0-next.0
     dependencies:
-      svelte: 4.2.18
+      svelte: 4.2.19
       swrev: 4.0.0
     dev: false
 
@@ -6085,8 +6085,8 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /svelte@4.2.18:
-    resolution: {integrity: sha512-d0FdzYIiAePqRJEb90WlJDkjUEx42xhivxN8muUBmfZnP+tzUgz12DJ2hRJi8sIHCME7jeK1PTMgKPSfTd8JrA==}
+  /svelte@4.2.19:
+    resolution: {integrity: sha512-IY1rnGr6izd10B0A8LqsBfmlT5OILVuZ7XsI0vdGPEvuonFV7NYEUK4dAkm9Zg2q0Um92kYjTpS1CAP3Nh/KWw==}
     engines: {node: '>=16'}
     dependencies:
       '@ampproject/remapping': 2.3.0
